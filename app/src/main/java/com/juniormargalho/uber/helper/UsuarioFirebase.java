@@ -1,5 +1,7 @@
 package com.juniormargalho.uber.helper;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -9,7 +11,14 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserProfileChangeRequest;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.ValueEventListener;
+import com.juniormargalho.uber.activity.MapsActivity;
+import com.juniormargalho.uber.activity.RequisicoesActivity;
 import com.juniormargalho.uber.config.ConfiguracaoFirebase;
+import com.juniormargalho.uber.model.Usuario;
 
 public class UsuarioFirebase {
 
@@ -35,5 +44,34 @@ public class UsuarioFirebase {
             e.printStackTrace();
             return false;
         }
+    }
+
+    public static void redirecionaUsuarioLogado(final Activity activity){
+        FirebaseUser user = getUsuarioAtual();
+        if(user != null){
+            DatabaseReference usuariosRef = ConfiguracaoFirebase.getFirebaseDatabase()
+                    .child("usuarios")
+                    .child(getIdentificadorUsuario());
+            usuariosRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                    Usuario usuario = dataSnapshot.getValue(Usuario.class);
+                    String tipoUsuario = usuario.getTipo();
+                    if(tipoUsuario.equals("M")){
+                        activity.startActivity(new Intent(activity, RequisicoesActivity.class));
+                    }else {
+                        activity.startActivity(new Intent(activity, MapsActivity.class));
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+                }
+            });
+        }
+    }
+
+    public static String getIdentificadorUsuario(){
+        return getUsuarioAtual().getUid();
     }
 }
