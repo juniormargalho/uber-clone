@@ -15,7 +15,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.ValueEventListener;
-import com.juniormargalho.uber.activity.MapsActivity;
+import com.juniormargalho.uber.activity.PassageiroActivity;
 import com.juniormargalho.uber.activity.RequisicoesActivity;
 import com.juniormargalho.uber.config.ConfiguracaoFirebase;
 import com.juniormargalho.uber.model.Usuario;
@@ -60,7 +60,7 @@ public class UsuarioFirebase {
                     if(tipoUsuario.equals("M")){
                         activity.startActivity(new Intent(activity, RequisicoesActivity.class));
                     }else {
-                        activity.startActivity(new Intent(activity, MapsActivity.class));
+                        activity.startActivity(new Intent(activity, PassageiroActivity.class));
                     }
                 }
 
