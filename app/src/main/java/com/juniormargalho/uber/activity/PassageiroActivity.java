@@ -3,7 +3,10 @@ package com.juniormargalho.uber.activity;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -19,36 +22,38 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.EditText;
+import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.juniormargalho.uber.R;
 import com.juniormargalho.uber.config.ConfiguracaoFirebase;
+import com.juniormargalho.uber.model.Destino;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Locale;
 
 public class PassageiroActivity extends AppCompatActivity implements OnMapReadyCallback {
     private GoogleMap mMap;
     private FirebaseAuth autenticacao;
     private LocationManager locationManager;
     private LocationListener locationListener;
+    private EditText editDestino;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_passageiro);
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        toolbar.setTitle("Iniciar uma viagem");
-        setSupportActionBar(toolbar);
 
-        //configuracoes iniciais
-        autenticacao = ConfiguracaoFirebase.getFirebaseAutenticacao();
-
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
+        inicializarComponentes();
     }
 
     @Override
@@ -56,6 +61,64 @@ public class PassageiroActivity extends AppCompatActivity implements OnMapReadyC
         mMap = googleMap;
 
         recuperarLocalizacaoUsuario();
+    }
+
+    public void chamarUber(View view){
+        String enderecoDestino = editDestino.getText().toString();
+
+        if(!enderecoDestino.equals("") || enderecoDestino != null){
+            Address addressDestino = recuperarEndereco(enderecoDestino);
+            if(addressDestino != null){
+                Destino destino = new Destino();
+                destino.setCidade(addressDestino.getAdminArea());
+                destino.setCep(addressDestino.getPostalCode());
+                destino.setBairro(addressDestino.getSubLocality());
+                destino.setRua(addressDestino.getThoroughfare());
+                destino.setNumero(addressDestino.getFeatureName());
+                destino.setLatitude(String.valueOf(addressDestino.getLatitude()));
+                destino.setLongitude(String.valueOf(addressDestino.getLongitude()));
+
+                StringBuilder mensagem = new StringBuilder();
+                mensagem.append("Cidade: " + destino.getCidade() + "\n");
+                mensagem.append("Rua: " + destino.getRua() + "\n");
+                mensagem.append("Bairro: " + destino.getBairro() + "\n");
+                mensagem.append("Número: " + destino.getNumero() + "\n");
+                mensagem.append("Cep: " + destino.getCep());
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(this)
+                        .setTitle("Confirme seu endereço!")
+                        .setMessage(mensagem)
+                        .setPositiveButton("Confirmar", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+
+                            }
+                        }).setNegativeButton("Cancelar", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+
+                            }
+                        });
+                AlertDialog dialog = builder.create();
+                dialog.show();
+            }
+        }else {
+            Toast.makeText(this, "Informe o endereço de destino!", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private Address recuperarEndereco(String endereco){
+        Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+        try {
+            List<Address> listaEnderecos = geocoder.getFromLocationName(endereco, 1);
+            if(listaEnderecos != null && listaEnderecos.size() > 0){
+                Address address = listaEnderecos.get(0);
+                return address;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     @SuppressLint("NewApi")
@@ -68,7 +131,6 @@ public class PassageiroActivity extends AppCompatActivity implements OnMapReadyC
                 double latitude = location.getLatitude();
                 double longitude = location.getLongitude();
                 LatLng meuLocal = new LatLng(latitude, longitude);
-
                 mMap.clear();
                 mMap.addMarker(new MarkerOptions()
                         .position(meuLocal)
@@ -108,7 +170,19 @@ public class PassageiroActivity extends AppCompatActivity implements OnMapReadyC
                 finish();
                 break;
         }
-
         return super.onOptionsItemSelected(item);
+    }
+
+    private void inicializarComponentes(){
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        toolbar.setTitle("Iniciar uma viagem");
+        setSupportActionBar(toolbar);
+
+        editDestino = findViewById(R.id.editDestino);
+
+        autenticacao = ConfiguracaoFirebase.getFirebaseAutenticacao();
+
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
+        mapFragment.getMapAsync(this);
     }
 }
