@@ -89,14 +89,17 @@ public class PassageiroActivity extends AppCompatActivity implements OnMapReadyC
                     lista.add( ds.getValue( Requisicao.class ) );
                 }
                 Collections.reverse(lista);
-                requisicao = lista.get(0);
 
-                switch (requisicao.getStatus()){
-                    case Requisicao.STATUS_AGUARDANDO :
-                        linearLayoutDestino.setVisibility( View.GONE );
-                        buttonChamarUber.setText("Cancelar Uber");
-                        uberChamado = true;
-                        break;
+                if( lista!= null && lista.size()>0 ){
+                    requisicao = lista.get(0);
+
+                    switch (requisicao.getStatus()){
+                        case Requisicao.STATUS_AGUARDANDO :
+                            linearLayoutDestino.setVisibility( View.GONE );
+                            buttonChamarUber.setText("Cancelar Uber");
+                            uberChamado = true;
+                            break;
+                    }
                 }
             }
 
