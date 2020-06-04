@@ -25,7 +25,10 @@ import androidx.appcompat.widget.Toolbar;
 import android.view.View;
 import android.widget.Button;
 
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.ValueEventListener;
 import com.juniormargalho.uber.R;
 import com.juniormargalho.uber.config.ConfiguracaoFirebase;
 import com.juniormargalho.uber.model.Requisicao;
@@ -48,10 +51,52 @@ public class CorridaActivity extends AppCompatActivity implements OnMapReadyCall
         setContentView(R.layout.activity_corrida);
 
         inicializarComponentes();
+
+        if( getIntent().getExtras().containsKey("idRequisicao") && getIntent().getExtras().containsKey("motorista") ){
+            Bundle extras = getIntent().getExtras();
+            motorista = (Usuario) extras.getSerializable("motorista");
+            idRequisicao = extras.getString("idRequisicao");
+            verificaStatusRequisicao();
+        }
+    }
+
+    private void verificaStatusRequisicao(){
+        DatabaseReference requisicoes = firebaseRef.child("requisicoes").child( idRequisicao );
+        requisicoes.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                requisicao = dataSnapshot.getValue(Requisicao.class);
+
+                switch ( requisicao.getStatus() ){
+                    case Requisicao.STATUS_AGUARDANDO :
+                        requisicaoAguardando();
+                        break;
+                    case Requisicao.STATUS_A_CAMINHO :
+                        requisicaoACaminho();
+                        break;
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+            }
+        });
+    }
+
+    private void requisicaoAguardando(){
+        buttonAceitarCorrida.setText("Aceitar corrida");
+    }
+
+    private void requisicaoACaminho(){
+        buttonAceitarCorrida.setText("A caminho do passageiro");
     }
 
     public void aceitarCorrida(View view){
-
+        requisicao = new Requisicao();
+        requisicao.setId( idRequisicao );
+        requisicao.setMotorista( motorista );
+        requisicao.setStatus( Requisicao.STATUS_A_CAMINHO );
+        requisicao.atualizar();
     }
 
     @SuppressLint("NewApi")
@@ -104,7 +149,6 @@ public class CorridaActivity extends AppCompatActivity implements OnMapReadyCall
         getSupportActionBar().setTitle("Iniciar corrida");
 
         buttonAceitarCorrida = findViewById(R.id.buttonAceitarCorrida);
-
         firebaseRef = ConfiguracaoFirebase.getFirebaseDatabase();
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
