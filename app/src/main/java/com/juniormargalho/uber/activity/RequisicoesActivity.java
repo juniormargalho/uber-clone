@@ -1,6 +1,7 @@
 package com.juniormargalho.uber.activity;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.os.Bundle;
@@ -16,8 +17,11 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 import com.juniormargalho.uber.R;
+import com.juniormargalho.uber.adapter.RequisicoesAdapter;
 import com.juniormargalho.uber.config.ConfiguracaoFirebase;
+import com.juniormargalho.uber.helper.UsuarioFirebase;
 import com.juniormargalho.uber.model.Requisicao;
+import com.juniormargalho.uber.model.Usuario;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +32,8 @@ public class RequisicoesActivity extends AppCompatActivity {
     private RecyclerView recyclerRequisicoes;
     private TextView textResultado;
     private List<Requisicao> listaRequisicoes = new ArrayList<>();
+    private RequisicoesAdapter adapter;
+    private Usuario motorista;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,6 +62,7 @@ public class RequisicoesActivity extends AppCompatActivity {
                     Requisicao requisicao = ds.getValue( Requisicao.class );
                     listaRequisicoes.add( requisicao );
                 }
+                adapter.notifyDataSetChanged();
             }
 
             @Override
@@ -87,8 +94,17 @@ public class RequisicoesActivity extends AppCompatActivity {
         recyclerRequisicoes = findViewById(R.id.recyclerRequisicoes);
         textResultado = findViewById(R.id.textResultado);
 
+        //Configurações iniciais
+        motorista = UsuarioFirebase.getDadosUsuarioLogado();
         autenticacao = ConfiguracaoFirebase.getFirebaseAutenticacao();
         firebaseRef = ConfiguracaoFirebase.getFirebaseDatabase();
+
+        //RecyclerView
+        adapter = new RequisicoesAdapter(listaRequisicoes, getApplicationContext(), motorista );
+        RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(getApplicationContext());
+        recyclerRequisicoes.setLayoutManager( layoutManager );
+        recyclerRequisicoes.setHasFixedSize(true);
+        recyclerRequisicoes.setAdapter( adapter );
 
         recuperarRequisicoes();
     }
