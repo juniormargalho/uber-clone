@@ -35,6 +35,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.ValueEventListener;
 import com.juniormargalho.uber.R;
 import com.juniormargalho.uber.config.ConfiguracaoFirebase;
+import com.juniormargalho.uber.helper.UsuarioFirebase;
 import com.juniormargalho.uber.model.Requisicao;
 import com.juniormargalho.uber.model.Usuario;
 
@@ -92,6 +93,8 @@ public class CorridaActivity extends AppCompatActivity implements OnMapReadyCall
 
     private void requisicaoAguardando(){
         buttonAceitarCorrida.setText("Aceitar corrida");
+        adicionaMarcadorMotorista(localMotorista, motorista.getNome() );
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(localMotorista, 20));
     }
 
     private void requisicaoACaminho(){
@@ -168,6 +171,7 @@ public class CorridaActivity extends AppCompatActivity implements OnMapReadyCall
                 double latitude = location.getLatitude();
                 double longitude = location.getLongitude();
                 localMotorista = new LatLng(latitude, longitude);
+                UsuarioFirebase.atualizarDadosLocalizacao(latitude, longitude);
                 alteraInterfaceStatusRequisicao(statusRequisicao);
             }
 

@@ -67,6 +67,15 @@ public class PassageiroActivity extends AppCompatActivity implements OnMapReadyC
     private DatabaseReference firebaseRef;
     private Requisicao requisicao;
 
+    /*
+     * Lat/lon destino:-23.556407, -46.662365 (Av. Paulista, 2439)
+     * Lat/lon passageiro: -23.562791, -46.654668
+     * Lat/lon Motorista (a caminho):
+     *   inicial: -23.563196, -46.650607
+     *   intermediaria: -23.564801, -46.652196
+     *   final: -23.563136, -46.654247
+     * */
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -205,12 +214,14 @@ public class PassageiroActivity extends AppCompatActivity implements OnMapReadyC
                 double latitude = location.getLatitude();
                 double longitude = location.getLongitude();
                 localPassageiro = new LatLng(latitude, longitude);
+                UsuarioFirebase.atualizarDadosLocalizacao(latitude, longitude);
+
                 mMap.clear();
                 mMap.addMarker(new MarkerOptions()
                         .position(localPassageiro)
                         .title("Meu local")
                         .icon(BitmapDescriptorFactory.fromResource(R.drawable.usuario)));
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(localPassageiro, 15));
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(localPassageiro, 20));
             }
 
             @Override
