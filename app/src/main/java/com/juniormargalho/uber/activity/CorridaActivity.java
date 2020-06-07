@@ -44,6 +44,7 @@ import com.google.firebase.database.ValueEventListener;
 import com.juniormargalho.uber.R;
 import com.juniormargalho.uber.config.ConfiguracaoFirebase;
 import com.juniormargalho.uber.helper.UsuarioFirebase;
+import com.juniormargalho.uber.model.Destino;
 import com.juniormargalho.uber.model.Requisicao;
 import com.juniormargalho.uber.model.Usuario;
 
@@ -57,9 +58,10 @@ public class CorridaActivity extends AppCompatActivity implements OnMapReadyCall
     private String idRequisicao, statusRequisicao;
     private Requisicao requisicao;
     private DatabaseReference firebaseRef;
-    private Marker marcadorMotorista, marcadorPassageiro;
+    private Marker marcadorMotorista, marcadorPassageiro, marcadorDestino;
     private boolean requisicaoAtiva;
     private FloatingActionButton fabRota;
+    private Destino destino;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,7 +82,7 @@ public class CorridaActivity extends AppCompatActivity implements OnMapReadyCall
     }
 
     private void verificaStatusRequisicao(){
-        DatabaseReference requisicoes = firebaseRef.child("requisicoes").child( idRequisicao );
+        final DatabaseReference requisicoes = firebaseRef.child("requisicoes").child( idRequisicao );
         requisicoes.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
@@ -90,6 +92,7 @@ public class CorridaActivity extends AppCompatActivity implements OnMapReadyCall
                     passageiro = requisicao.getPassageiro();
                     localPassageiro = new LatLng(Double.parseDouble(passageiro.getLatitude()), Double.parseDouble(passageiro.getLongitude()));
                     statusRequisicao = requisicao.getStatus();
+                    destino = requisicao.getDestino();
                     alteraInterfaceStatusRequisicao(statusRequisicao);
                 }
             }
@@ -121,6 +124,19 @@ public class CorridaActivity extends AppCompatActivity implements OnMapReadyCall
 
         //Inicia monitoramento do motorista / passageiro
         iniciarMonitoramentoCorrida(passageiro, motorista);
+    }
+
+    private void requisicaoViagem(){
+        fabRota.setVisibility(View.VISIBLE);
+        buttonAceitarCorrida.setText("A caminho do destino");
+        adicionaMarcadorMotorista(localMotorista, motorista.getNome());
+
+        LatLng localDestino = new LatLng(
+                Double.parseDouble(destino.getLatitude()),
+                Double.parseDouble(destino.getLongitude()));
+
+        adicionaMarcadorDestino(localDestino, "Destino");
+        centralizarDoisMarcadores(marcadorMotorista, marcadorDestino);
     }
 
     private void iniciarMonitoramentoCorrida(Usuario p, Usuario m){
@@ -197,6 +213,20 @@ public class CorridaActivity extends AppCompatActivity implements OnMapReadyCall
         mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds,largura,altura,espacoInterno));
     }
 
+    private void adicionaMarcadorDestino(LatLng localizacao, String titulo){
+        if( marcadorPassageiro != null )
+            marcadorPassageiro.remove();
+
+        if( marcadorDestino != null )
+            marcadorDestino.remove();
+
+        marcadorDestino = mMap.addMarker(
+                new MarkerOptions()
+                        .position(localizacao)
+                        .title(titulo)
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.destino)));
+    }
+
     public void aceitarCorrida(View view){
         requisicao = new Requisicao();
         requisicao.setId( idRequisicao );
@@ -212,6 +242,9 @@ public class CorridaActivity extends AppCompatActivity implements OnMapReadyCall
                 break;
             case Requisicao.STATUS_A_CAMINHO :
                 requisicaoACaminho();
+                break;
+            case Requisicao.STATUS_VIAGEM :
+                requisicaoViagem();
                 break;
         }
     }
@@ -283,6 +316,8 @@ public class CorridaActivity extends AppCompatActivity implements OnMapReadyCall
                             lon = String.valueOf(localPassageiro.longitude);
                             break;
                         case Requisicao.STATUS_VIAGEM :
+                            lat = destino.getLatitude();
+                            lon = destino.getLongitude();
                             break;
                     }
 
