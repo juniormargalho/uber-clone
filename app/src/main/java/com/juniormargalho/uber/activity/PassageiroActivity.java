@@ -73,7 +73,7 @@ public class PassageiroActivity extends AppCompatActivity implements OnMapReadyC
      * Lat/lon Motorista (a caminho):
      *   inicial: -23.563196, -46.650607
      *   intermediaria: -23.564801, -46.652196
-     *   final: -23.563136, -46.654247
+     *   final: -23.562801, -46.654660
      * */
 
     @Override
