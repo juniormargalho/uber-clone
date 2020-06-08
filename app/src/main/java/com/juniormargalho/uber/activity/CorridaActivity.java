@@ -123,7 +123,7 @@ public class CorridaActivity extends AppCompatActivity implements OnMapReadyCall
         centralizarDoisMarcadores(marcadorMotorista, marcadorPassageiro);
 
         //Inicia monitoramento do motorista / passageiro
-        iniciarMonitoramentoCorrida(passageiro, motorista);
+        iniciarMonitoramento(motorista, localPassageiro, Requisicao.STATUS_VIAGEM);
     }
 
     private void requisicaoViagem(){
@@ -137,26 +137,29 @@ public class CorridaActivity extends AppCompatActivity implements OnMapReadyCall
 
         adicionaMarcadorDestino(localDestino, "Destino");
         centralizarDoisMarcadores(marcadorMotorista, marcadorDestino);
+
+        //Inicia monitoramento do motorista / destino do passageiro
+        iniciarMonitoramento(motorista, localDestino, Requisicao.STATUS_FINALIZADA);
     }
 
-    private void iniciarMonitoramentoCorrida(Usuario p, Usuario m){
+    private void iniciarMonitoramento(final Usuario uOrigem, LatLng localDestino, final String status){
         DatabaseReference localUsuario = ConfiguracaoFirebase.getFirebaseDatabase().child("local_usuario");
         GeoFire geoFire = new GeoFire(localUsuario);
 
         //Adiciona círculo no passageiro
         final Circle circulo = mMap.addCircle(
                 new CircleOptions()
-                        .center( localPassageiro )
+                        .center( localDestino )
                         .radius(50)//em metros
                         .fillColor(Color.argb(90,255, 153,0))
                         .strokeColor(Color.argb(190,255,152,0)));
 
-        final GeoQuery geoQuery = geoFire.queryAtLocation(new GeoLocation(localPassageiro.latitude, localPassageiro.longitude), 0.05);
+        final GeoQuery geoQuery = geoFire.queryAtLocation(new GeoLocation(localDestino.latitude, localDestino.longitude), 0.05);
         geoQuery.addGeoQueryEventListener(new GeoQueryEventListener() {
             @Override
             public void onKeyEntered(String key, GeoLocation location) {
-                if( key.equals(motorista.getId()) ){
-                    requisicao.setStatus(Requisicao.STATUS_VIAGEM);
+                if( key.equals(uOrigem.getId()) ){
+                    requisicao.setStatus(status);
                     requisicao.atualizarStatus();
                     geoQuery.removeAllListeners();
                     circulo.remove();

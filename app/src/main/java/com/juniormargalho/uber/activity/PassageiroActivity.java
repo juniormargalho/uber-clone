@@ -74,6 +74,8 @@ public class PassageiroActivity extends AppCompatActivity implements OnMapReadyC
      *   inicial: -23.563196, -46.650607
      *   intermediaria: -23.564801, -46.652196
      *   final: -23.562801, -46.654660
+     * Encerramento intermediário: -23.557499, -46.661084
+     * Encerramento da corrida: -23.556439, -46.662313
      * */
 
     @Override
