@@ -106,7 +106,7 @@ public class CorridaActivity extends AppCompatActivity implements OnMapReadyCall
     private void requisicaoAguardando(){
         buttonAceitarCorrida.setText("Aceitar corrida");
         adicionaMarcadorMotorista(localMotorista, motorista.getNome() );
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(localMotorista, 20));
+        centralizarMarcador(localMotorista);
     }
 
     private void requisicaoACaminho(){
@@ -249,7 +249,34 @@ public class CorridaActivity extends AppCompatActivity implements OnMapReadyCall
             case Requisicao.STATUS_VIAGEM :
                 requisicaoViagem();
                 break;
+            case Requisicao.STATUS_FINALIZADA :
+                requisicaoFinalizada();
+                break;
         }
+    }
+
+    private void requisicaoFinalizada(){
+        fabRota.setVisibility(View.GONE);
+
+        if( marcadorMotorista != null )
+            marcadorMotorista.remove();
+
+        if( marcadorDestino != null )
+            marcadorDestino.remove();
+
+        //Exibe marcador de destino
+        LatLng localDestino = new LatLng(
+                Double.parseDouble(destino.getLatitude()),
+                Double.parseDouble(destino.getLongitude())
+        );
+        adicionaMarcadorDestino(localDestino, "Destino");
+        centralizarMarcador(localDestino);
+
+        buttonAceitarCorrida.setText("Corrida finalizada - R$ 20");
+    }
+
+    private void centralizarMarcador(LatLng local){
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(local, 20));
     }
 
     @SuppressLint("NewApi")
