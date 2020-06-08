@@ -43,10 +43,13 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.ValueEventListener;
 import com.juniormargalho.uber.R;
 import com.juniormargalho.uber.config.ConfiguracaoFirebase;
+import com.juniormargalho.uber.helper.Local;
 import com.juniormargalho.uber.helper.UsuarioFirebase;
 import com.juniormargalho.uber.model.Destino;
 import com.juniormargalho.uber.model.Requisicao;
 import com.juniormargalho.uber.model.Usuario;
+
+import java.text.DecimalFormat;
 
 public class CorridaActivity extends AppCompatActivity implements OnMapReadyCallback {
     private Button buttonAceitarCorrida;
@@ -257,6 +260,7 @@ public class CorridaActivity extends AppCompatActivity implements OnMapReadyCall
 
     private void requisicaoFinalizada(){
         fabRota.setVisibility(View.GONE);
+        requisicaoAtiva = false;
 
         if( marcadorMotorista != null )
             marcadorMotorista.remove();
@@ -272,7 +276,13 @@ public class CorridaActivity extends AppCompatActivity implements OnMapReadyCall
         adicionaMarcadorDestino(localDestino, "Destino");
         centralizarMarcador(localDestino);
 
-        buttonAceitarCorrida.setText("Corrida finalizada - R$ 20");
+        //Calcular distancia
+        float distancia = Local.calcularDistancia(localPassageiro, localDestino);
+        float valor = distancia * 8;
+        DecimalFormat decimal = new DecimalFormat("0.00");
+        String resultado = decimal.format(valor);
+
+        buttonAceitarCorrida.setText("Corrida finalizada - R$ " + resultado );
     }
 
     private void centralizarMarcador(LatLng local){
