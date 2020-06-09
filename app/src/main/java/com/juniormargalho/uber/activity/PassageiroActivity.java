@@ -27,6 +27,7 @@ import com.google.android.material.snackbar.Snackbar;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.ActivityCompat;
 
 import android.view.Menu;
 import android.view.MenuItem;
@@ -44,12 +45,14 @@ import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 import com.juniormargalho.uber.R;
 import com.juniormargalho.uber.config.ConfiguracaoFirebase;
+import com.juniormargalho.uber.helper.Local;
 import com.juniormargalho.uber.helper.UsuarioFirebase;
 import com.juniormargalho.uber.model.Destino;
 import com.juniormargalho.uber.model.Requisicao;
 import com.juniormargalho.uber.model.Usuario;
 
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -133,19 +136,21 @@ public class PassageiroActivity extends AppCompatActivity implements OnMapReadyC
     }
 
     private void alteraInterfaceStatusRequisicao(String status){
-        switch (requisicao.getStatus()){
-            case Requisicao.STATUS_AGUARDANDO :
-                requisicaoAguardando();
-                break;
-            case Requisicao.STATUS_A_CAMINHO :
-                requisicaoACaminho();
-                break;
-            case Requisicao.STATUS_VIAGEM :
-                requisicaoViagem();
-                break;
-            case Requisicao.STATUS_FINALIZADA :
-                requisicaoFinalizada();
-                break;
+        if(status != null && !status.isEmpty()) {
+            switch (status) {
+                case Requisicao.STATUS_AGUARDANDO:
+                    requisicaoAguardando();
+                    break;
+                case Requisicao.STATUS_A_CAMINHO:
+                    requisicaoACaminho();
+                    break;
+                case Requisicao.STATUS_VIAGEM:
+                    requisicaoViagem();
+                    break;
+                case Requisicao.STATUS_FINALIZADA:
+                    requisicaoFinalizada();
+                    break;
+            }
         }
     }
 
@@ -175,9 +180,39 @@ public class PassageiroActivity extends AppCompatActivity implements OnMapReadyC
     }
 
     private void requisicaoViagem(){
+        linearLayoutDestino.setVisibility( View.GONE );
+        buttonChamarUber.setText("A caminho do destino");
+
+        //Adiciona marcador motorista
+        adicionaMarcadorMotorista(localMotorista, motorista.getNome());
+
+        //Adiciona marcador de destino
+        LatLng localDestino = new LatLng(
+                Double.parseDouble(destino.getLatitude()),
+                Double.parseDouble(destino.getLongitude()));
+        adicionaMarcadorDestino(localDestino, "Destino");
+
+        //Centraliza marcadores motorista / destino
+        centralizarDoisMarcadores(marcadorMotorista, marcadorDestino);
     }
 
     private void requisicaoFinalizada(){
+        linearLayoutDestino.setVisibility( View.GONE );
+
+        //Adiciona marcador de destino
+        LatLng localDestino = new LatLng(
+                Double.parseDouble(destino.getLatitude()),
+                Double.parseDouble(destino.getLongitude()));
+        adicionaMarcadorDestino(localDestino, "Destino");
+        centralizarMarcador(localDestino);
+
+        //Calcular distancia
+        float distancia = Local.calcularDistancia(localPassageiro, localDestino);
+        float valor = distancia * 8;
+        DecimalFormat decimal = new DecimalFormat("0.00");
+        String resultado = decimal.format(valor);
+
+        buttonChamarUber.setText("Corrida finalizada - R$ " + resultado);
     }
 
     private void centralizarMarcador(LatLng local){
@@ -217,6 +252,20 @@ public class PassageiroActivity extends AppCompatActivity implements OnMapReadyC
                         .position(localizacao)
                         .title(titulo)
                         .icon(BitmapDescriptorFactory.fromResource(R.drawable.carro)));
+    }
+
+    private void adicionaMarcadorDestino(LatLng localizacao, String titulo){
+        if( marcadorPassageiro != null )
+            marcadorPassageiro.remove();
+
+        if( marcadorDestino != null )
+            marcadorDestino.remove();
+
+        marcadorDestino = mMap.addMarker(
+                new MarkerOptions()
+                        .position(localizacao)
+                        .title(titulo)
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.destino)));
     }
 
     @Override
@@ -312,17 +361,23 @@ public class PassageiroActivity extends AppCompatActivity implements OnMapReadyC
         locationListener = new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
+
+                //recuperar latitude e longitude
                 double latitude = location.getLatitude();
                 double longitude = location.getLongitude();
                 localPassageiro = new LatLng(latitude, longitude);
+
+                //Atualizar GeoFire
                 UsuarioFirebase.atualizarDadosLocalizacao(latitude, longitude);
 
-                mMap.clear();
-                mMap.addMarker(new MarkerOptions()
-                        .position(localPassageiro)
-                        .title("Meu local")
-                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.usuario)));
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(localPassageiro, 20));
+                //Altera interface de acordo com o status
+                alteraInterfaceStatusRequisicao( statusRequisicao );
+
+                if(statusRequisicao != null && !statusRequisicao.isEmpty()) {
+                    if (statusRequisicao.equals(Requisicao.STATUS_VIAGEM) || statusRequisicao.equals(Requisicao.STATUS_FINALIZADA)) {
+                        locationManager.removeUpdates(locationListener);
+                    }
+                }
             }
 
             @Override
@@ -337,8 +392,15 @@ public class PassageiroActivity extends AppCompatActivity implements OnMapReadyC
             public void onProviderDisabled(String provider) {
             }
         };
-        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 10000, 10, locationListener);
+
+        //Solicitar atualizações de localização
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ) {
+            locationManager.requestLocationUpdates(
+                    LocationManager.GPS_PROVIDER,
+                    10000,
+                    10,
+                    locationListener
+            );
         }
     }
 
