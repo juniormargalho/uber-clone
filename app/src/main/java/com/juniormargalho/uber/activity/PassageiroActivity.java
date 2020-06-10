@@ -69,7 +69,7 @@ public class PassageiroActivity extends AppCompatActivity implements OnMapReadyC
     private LatLng localPassageiro, localMotorista;
     private LinearLayout linearLayoutDestino;
     private Button buttonChamarUber;
-    private boolean uberChamado = false;
+    private boolean cancelarUber = false;
     private DatabaseReference firebaseRef;
     private Requisicao requisicao;
     private Usuario passageiro, motorista;
@@ -141,6 +141,7 @@ public class PassageiroActivity extends AppCompatActivity implements OnMapReadyC
 
     private void alteraInterfaceStatusRequisicao(String status){
         if(status != null && !status.isEmpty()) {
+            cancelarUber = false;
             switch (status) {
                 case Requisicao.STATUS_AGUARDANDO:
                     requisicaoAguardando();
@@ -154,6 +155,9 @@ public class PassageiroActivity extends AppCompatActivity implements OnMapReadyC
                 case Requisicao.STATUS_FINALIZADA:
                     requisicaoFinalizada();
                     break;
+                case Requisicao.STATUS_CANCELADA:
+                    requisicaoCancelada();
+                    break;
             }
         }else {
             //Adiciona marcador passageiro
@@ -162,10 +166,16 @@ public class PassageiroActivity extends AppCompatActivity implements OnMapReadyC
         }
     }
 
+    private void requisicaoCancelada(){
+        linearLayoutDestino.setVisibility( View.VISIBLE );
+        buttonChamarUber.setText("Chamar Uber");
+        cancelarUber = false;
+    }
+
     private void requisicaoAguardando(){
         linearLayoutDestino.setVisibility( View.GONE );
         buttonChamarUber.setText("Cancelar Uber");
-        uberChamado = true;
+        cancelarUber = true;
 
         //Adiciona marcador passageiro
         adicionaMarcadorPassageiro(localPassageiro, passageiro.getNome());
@@ -175,7 +185,7 @@ public class PassageiroActivity extends AppCompatActivity implements OnMapReadyC
     private void requisicaoACaminho(){
         linearLayoutDestino.setVisibility( View.GONE );
         buttonChamarUber.setText("Motorista a caminho");
-        uberChamado = true;
+        buttonChamarUber.setEnabled(false);
 
         //Adiciona marcador passageiro
         adicionaMarcadorPassageiro(localPassageiro, passageiro.getNome());
@@ -190,6 +200,7 @@ public class PassageiroActivity extends AppCompatActivity implements OnMapReadyC
     private void requisicaoViagem(){
         linearLayoutDestino.setVisibility( View.GONE );
         buttonChamarUber.setText("A caminho do destino");
+        buttonChamarUber.setEnabled(false);
 
         //Adiciona marcador motorista
         adicionaMarcadorMotorista(localMotorista, motorista.getNome());
@@ -206,6 +217,7 @@ public class PassageiroActivity extends AppCompatActivity implements OnMapReadyC
 
     private void requisicaoFinalizada(){
         linearLayoutDestino.setVisibility( View.GONE );
+        buttonChamarUber.setEnabled(false);
 
         //Adiciona marcador de destino
         LatLng localDestino = new LatLng(
@@ -300,8 +312,10 @@ public class PassageiroActivity extends AppCompatActivity implements OnMapReadyC
     }
 
     public void chamarUber(View view){
-
-        if(!uberChamado){
+        if(cancelarUber){
+            requisicao.setStatus(Requisicao.STATUS_CANCELADA);
+            requisicao.atualizarStatus();
+        }else {
             String enderecoDestino = editDestino.getText().toString();
 
             if(!enderecoDestino.equals("") || enderecoDestino != null){
@@ -330,7 +344,6 @@ public class PassageiroActivity extends AppCompatActivity implements OnMapReadyC
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
                                     salvarRequisicao(destino);
-                                    uberChamado = true;
                                 }
                             }).setNegativeButton("Cancelar", new DialogInterface.OnClickListener() {
                                 @Override
@@ -343,8 +356,6 @@ public class PassageiroActivity extends AppCompatActivity implements OnMapReadyC
             }else {
                 Toast.makeText(this, "Informe o endereço de destino!", Toast.LENGTH_SHORT).show();
             }
-        }else {
-            uberChamado = false;
         }
     }
 
