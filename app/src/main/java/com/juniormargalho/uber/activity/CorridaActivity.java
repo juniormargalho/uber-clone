@@ -386,6 +386,12 @@ public class CorridaActivity extends AppCompatActivity implements OnMapReadyCall
             Intent i = new Intent(CorridaActivity.this, RequisicoesActivity.class);
             startActivity(i);
         }
+
+        //Verificar o status da requisição para encerrar
+        if( statusRequisicao != null && !statusRequisicao.isEmpty() ){
+            requisicao.setStatus(Requisicao.STATUS_ENCERRADA);
+            requisicao.atualizarStatus();
+        }
         return false;
     }
 }
